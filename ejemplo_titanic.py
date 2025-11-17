@@ -2,57 +2,17 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Carga el archivo CSV "database_titanic.csv" en un DataFrame de pandas.
-df = pd.read_csv("database_titanic.csv")
+# Carga CSV
+df = pd.read_csv(r"database_titanic.csv")
 
-# Muestra un título y una descripción en la aplicación Streamlit.
-st.write("""
-# Mi primera aplicación interactiva
-## Gráficos usando la base de datos del Titanic
-""")
+st.write("# Mi primera aplicación interactiva\n## Gráficos usando la base de datos del Titanic")
 
-# Usando la notación "with" para crear una barra lateral en la aplicación Streamlit.
 with st.sidebar:
-    # Título para la sección de opciones en la barra lateral.
     st.write("# OPCIONES")
-    
-    # Crea un control deslizante (slider) que permite al usuario seleccionar un número de bins
-    # en el rango de 0 a 10, con un valor predeterminado de 2.
-    div = st.slider('Número de bins:', 0, 10, 2)
-    
-    # Muestra el valor actual del slider en la barra lateral.
-    st.write("Bins=", div)
+    bins = st.slider("Número de bins:", 1, 20, 8)
+    st.write("Bins=", bins)
 
-# Desplegamos un histograma con los datos del eje X
-fig, ax = plt.subplots(1, 2, figsize=(10, 3))
-ax[0].hist(df["Age"], bins=div)
-ax[0].set_xlabel("Edad")
-ax[0].set_ylabel("Frecuencia")
-ax[0].set_title("Histograma de edades")
-
-# Tomando datos para hombres y contando la cantidad
-df_male = df[df["Sex"] == "male"]
-cant_male = len(df_male)
-
-# Tomando datos para mujeres y contando la cantidad
-df_female = df[df["Sex"] == "female"]
-cant_female = len(df_female)
-
-ax[1].bar(["Masculino", "Femenino"], [cant_male, cant_female], color = "red")
-ax[1].set_xlabel("Sexo")
-ax[1].set_ylabel("Cantidad")
-ax[1].set_title('Distribución de hombres y mujeres')
-
-# Desplegamos el gráfico
-st.pyplot(fig)
-
-st.write("""
-## Muestra de datos cargados
-""")
-# Graficamos una tabla
-st.table(df.head())
-
-# Normalizar Survived a 0/1 por seguridad
+# Normalizar Survived a 0/1
 s = df["Survived"].copy()
 if s.dtype == object:
     s = s.str.lower().map(lambda x: 1 if x in ("yes", "y", "si", "s", "1", "true", "t") else 0)
@@ -60,25 +20,42 @@ else:
     s = s.fillna(0).astype(int)
 df = df.assign(Survived_norm=s)
 
-# Agrupar y obtener valores por sexo
-sexos = df.groupby("Sex")["Survived_norm"].sum()  # ej. index: ['female','male']
+# Crear figura con 3 subplots (1 fila x 3 columnas)
+fig, ax = plt.subplots(1, 3, figsize=(18, 4))
 
-# Asegurar orden y nombres legibles
-male_count = int(sexos.get("male", 0))
-female_count = int(sexos.get("female", 0))
-labels = ["Masculino", "Femenino"]
-values = [male_count, female_count]
+# 1) Histograma de Age
+ax[0].hist(df["Age"].dropna(), bins=bins, color="skyblue", edgecolor="k")
+ax[0].set_xlabel("Edad")
+ax[0].set_ylabel("Frecuencia")
+ax[0].set_title("Histograma de edades")
 
-# Crear/usar ax[2] en una figura con 3 subplots (ejemplo)
-fig, ax = plt.subplots(1, 3, figsize=(15, 4))  # adapta tamaño según necesites
+# 2) Conteo total por sexo
+counts = df["Sex"].value_counts()
+labels_counts = ["Masculino" if s == "male" else "Femenino" if s == "female" else s for s in counts.index]
+ax[1].bar(labels_counts, counts.values, color=["#d9534f", "#5bc0de"][:len(counts)])
+ax[1].set_xlabel("Sexo")
+ax[1].set_ylabel("Cantidad")
+ax[1].set_title("Distribución de hombres y mujeres")
+for i, v in enumerate(counts.values):
+    ax[1].text(i, v + max(1, int(0.01 * max(counts.values))), int(v), ha='center')
 
-# (Aquí puedes mantener tus otros dos gráficos en ax[0] y ax[1])
-
-# Grafico de supervivientes por sexo en ax[2]
-ax[2].bar(labels, values, color="red")
+# 3) Supervivientes por sexo (usar valores sumados)
+surv_by_sex = df.groupby("Sex")["Survived_norm"].sum()
+male_count = int(surv_by_sex.get("male", 0))
+female_count = int(surv_by_sex.get("female", 0))
+ax[2].bar(["Masculino", "Femenino"], [male_count, female_count], color=["#4CAF50", "#FF9800"])
 ax[2].set_xlabel("Sexo")
 ax[2].set_ylabel("Cantidad de supervivientes")
-ax[2].set_title("Distribución de Supervivientes")
-for i, v in enumerate(values):
-    ax[2].text(i, v + max(1, int(0.01 * max(values))), str(v), ha='center')
+ax[2].set_title("Supervivientes por sexo")
+for i, v in enumerate([male_count, female_count]):
+    ax[2].text(i, v + max(1, int(0.01 * max(male_count, female_count))), str(v), ha='center')
+
+plt.tight_layout()
+st.pyplot(fig)
+plt.close(fig)
+
+st.write("## Muestra de datos cargados")
+st.table(df.head())
+
+
 
