@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Carga el archivo CSV "database_titanic.csv" en un DataFrame de pandas.
-df = pd.read_csv("database_titanic.csv")
+df = pd.read_csv("clases\\Unidad 4\\database_titanic.csv")
 
 # Muestra un título y una descripción en la aplicación Streamlit.
 st.write("""
@@ -14,7 +14,7 @@ st.write("""
 # Usando la notación "with" para crear una barra lateral en la aplicación Streamlit.
 with st.sidebar:
     # Título para la sección de opciones en la barra lateral.
-    st.write("# Opciones")
+    st.write("# OPCIONES")
     
     # Crea un control deslizante (slider) que permite al usuario seleccionar un número de bins
     # en el rango de 0 a 10, con un valor predeterminado de 2.
@@ -50,4 +50,17 @@ st.write("""
 ## Muestra de datos cargados
 """)
 # Graficamos una tabla
+st.table(df.head())
+
+Sexos = df.groupby("Sex")["Survived"].sum()
+#print(Sexos)
+fermale=Sexos.head(1)
+
+male= Sexos.tail(1)
+
+#print(male)
+ax[1].bar(["Masculino", "Femenino"], [len(male), len(fermale)], color = "red")
+ax[1].set_xlabel("Sexo")
+ax[1].set_ylabel("Cantidad")
+ax[1].set_title('Distribución de Supervivientes')
 st.table(df.head())
