@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Carga el archivo CSV "database_titanic.csv" en un DataFrame de pandas.
-df = pd.read_csv("database_titanic.csv")
+df = pd.read_csv("clases\\Unidad 4\\database_titanic.csv")
 
 # Muestra un título y una descripción en la aplicación Streamlit.
 st.write("""
@@ -52,15 +52,33 @@ st.write("""
 # Graficamos una tabla
 st.table(df.head())
 
-Sexos = df.groupby("Sex")["Survived"].sum()
-#print(Sexos)
-fermale=Sexos.head(1)
+# Normalizar Survived a 0/1 por seguridad
+s = df["Survived"].copy()
+if s.dtype == object:
+    s = s.str.lower().map(lambda x: 1 if x in ("yes", "y", "si", "s", "1", "true", "t") else 0)
+else:
+    s = s.fillna(0).astype(int)
+df = df.assign(Survived_norm=s)
 
-male= Sexos.tail(1)
+# Agrupar y obtener valores por sexo
+sexos = df.groupby("Sex")["Survived_norm"].sum()  # ej. index: ['female','male']
 
-#print(male)
-ax[2].bar(["Masculino", "Femenino"], [len(male), len(fermale)], color = "red")
+# Asegurar orden y nombres legibles
+male_count = int(sexos.get("male", 0))
+female_count = int(sexos.get("female", 0))
+labels = ["Masculino", "Femenino"]
+values = [male_count, female_count]
+
+# Crear/usar ax[2] en una figura con 3 subplots (ejemplo)
+fig, ax = plt.subplots(1, 3, figsize=(15, 4))  # adapta tamaño según necesites
+
+# (Aquí puedes mantener tus otros dos gráficos en ax[0] y ax[1])
+
+# Grafico de supervivientes por sexo en ax[2]
+ax[2].bar(labels, values, color="red")
 ax[2].set_xlabel("Sexo")
-ax[2].set_ylabel("Cantidad")
-ax[2].set_title('Distribución de Supervivientes')
-st.table(df.head())
+ax[2].set_ylabel("Cantidad de supervivientes")
+ax[2].set_title("Distribución de Supervivientes")
+for i, v in enumerate(values):
+    ax[2].text(i, v + max(1, int(0.01 * max(values))), str(v), ha='center')
+
